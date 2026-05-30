@@ -319,7 +319,6 @@
             color: var(--txt);
             padding: 2px 4px;
         }
-        .kw-hint { font-size: 11px; color: var(--sub); margin-top: 5px; }
 
         /* 이름 폰트 선택 */
         .font-section { margin-bottom: 4px; }
@@ -407,7 +406,7 @@
             box-shadow: 0 16px 56px rgba(0,0,0,0.22);
         }
 
-        /* 이미지 레이어 */
+        /* 이미지 레이어 (CSS Transition 제거하여 삐끗거림 방지) */
         #cImg {
             position: absolute;
             inset: 0;
@@ -418,7 +417,6 @@
             display: none;
             z-index: 1;
             transform-origin: center center;
-            transition: transform .05s;
             will-change: transform;
         }
 
@@ -539,8 +537,8 @@
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            align-items: flex-end; /* 우측 정렬 */
-            text-align: right;     /* 텍스트 우측 정렬 */
+            align-items: flex-end; 
+            text-align: right;     
             padding-bottom: 48px;
         }
 
@@ -585,7 +583,7 @@
             display: flex;
             flex-wrap: wrap;
             gap: 4px;
-            justify-content: flex-end; /* 우측 정렬 */
+            justify-content: flex-end; 
         }
 
         .c-kwtag {
@@ -763,6 +761,34 @@ const $ = id => document.getElementById(id);
 const card = $('card');
 const setV = (n, v) => card.style.setProperty(n, v);
 
+// ─── 통합된 이미지 변환 함수 (삐끗거림 방지) ───
+function updateImgTransform() {
+    const cImg = $('cImg');
+    if (!cImg || cImg.style.display === 'none') return;
+
+    const zoom = parseInt($('sZoom').value) / 100;
+    const posX = parseInt($('sPosX').value);
+    const posY = parseInt($('sPosY').value);
+
+    const shiftX = (posX - 50) * 8;
+    const baseShiftY = (posY - 50) * 6;
+
+    const scaler = $('cardScaler');
+    const rect = scaler.getBoundingClientRect();
+    const vh = window.innerHeight;
+    
+    if (vh === 0) return;
+
+    const center = rect.top + rect.height / 2;
+    const norm = (center - vh / 2) / (vh / 2 + rect.height / 2);
+    
+    // 범위를 제한하여 과도한 점프 방지
+    const clampedNorm = Math.max(-1, Math.min(1, norm));
+    const parallaxShift = clampedNorm * 40;
+
+    cImg.style.transform = `translate(${shiftX}px, ${baseShiftY + parallaxShift}px) scale(${zoom})`;
+}
+
 // ─── 모바일 카드 스케일 ───
 function scaleCard() {
     const scaler = $('cardScaler');
@@ -771,41 +797,19 @@ function scaleCard() {
         const availW = Math.min(window.innerWidth - 32, 480);
         const scale  = availW / 800;
         card.style.transform = `scale(${scale})`;
-        card.style.transition = '';
         scaler.style.height = (600 * scale) + 'px';
     } else {
         card.style.transform = '';
         scaler.style.height = '';
     }
+    // 창 크기가 변경될 때도 이미지 트랜스폼 즉시 재계산
+    updateImgTransform();
 }
+
+// 이벤트 리스너 통합 연동
 scaleCard();
 window.addEventListener('resize', scaleCard);
-
-// ─── 스크롤 시 이미지 패럴랙스 ───
-function updateParallax() {
-    const cImg = $('cImg');
-    if (!cImg || cImg.style.display === 'none') return;
-
-    const scaler  = $('cardScaler');
-    const rect    = scaler.getBoundingClientRect();
-    const vh      = window.innerHeight;
-
-    const center  = (rect.top + rect.height / 2);
-    const norm    = (center - vh / 2) / (vh / 2 + rect.height / 2);
-
-    const zoom    = parseInt($('sZoom').value) / 100;
-    const posX    = parseInt($('sPosX').value);
-    const posY    = parseInt($('sPosY').value);
-    
-    const shiftX  = (posX - 50) * 8;
-    const baseShiftY = (posY - 50) * 6;
-    const parallaxShift = norm * 40;
-
-    cImg.style.transition = 'none';
-    cImg.style.transform  = `translate(${shiftX}px, ${baseShiftY + parallaxShift}px) scale(${zoom})`;
-}
-
-window.addEventListener('scroll', updateParallax, { passive: true });
+window.addEventListener('scroll', updateImgTransform, { passive: true });
 
 // ─── 그라데이션 업데이트 ───
 function updateGrad() {
@@ -837,22 +841,9 @@ Object.entries(colorMap).forEach(([id, v]) => {
     apply();
 });
 
-// ─── 이미지 업로드 + 확대/위치 ───
+// ─── 이미지 업로드 ───
 let rawImg  = new Image();
 let imgReady = false;
-
-function applyImgTransform() {
-    if (!imgReady) return;
-    const zoom    = parseInt($('sZoom').value) / 100;
-    const posX    = parseInt($('sPosX').value);
-    const posY    = parseInt($('sPosY').value);
-    const shiftX  = (posX - 50) * 8;
-    const shiftY  = (posY - 50) * 6;
-    
-    const cImg    = $('cImg');
-    cImg.style.transition = 'transform .05s';
-    cImg.style.transform  = `translate(${shiftX}px, ${shiftY}px) scale(${zoom})`;
-}
 
 $('imgIn').addEventListener('change', function(e) {
     const f = e.target.files[0];
@@ -865,26 +856,16 @@ $('imgIn').addEventListener('change', function(e) {
         ci.src = src;
         ci.style.display = 'block';
         rawImg = new Image();
-        rawImg.onload = () => { imgReady = true; applyImgTransform(); };
+        rawImg.onload = () => { imgReady = true; updateImgTransform(); };
         rawImg.src = src;
     };
     rd.readAsDataURL(f);
 });
 
-$('sPosX').addEventListener('input', function() {
-    $('vPosX').textContent = this.value + '%';
-    applyImgTransform();
-});
-
-$('sPosY').addEventListener('input', function() {
-    $('vPosY').textContent = this.value + '%';
-    applyImgTransform();
-});
-
-$('sZoom').addEventListener('input', function() {
-    $('vZoom').textContent = this.value + '%';
-    applyImgTransform();
-});
+// 슬라이더 이동 시 통합 트랜스폼 함수 호출
+$('sPosX').addEventListener('input', function() { $('vPosX').textContent = this.value + '%'; updateImgTransform(); });
+$('sPosY').addEventListener('input', function() { $('vPosY').textContent = this.value + '%'; updateImgTransform(); });
+$('sZoom').addEventListener('input', function() { $('vZoom').textContent = this.value + '%'; updateImgTransform(); });
 
 // ─── 이름 폰트 선택 ───
 let selectedNameFont = 'Nunito';
@@ -921,7 +902,6 @@ $('iBadge').addEventListener('input', function() {
     $('pBadge').textContent = v;
     $('pBadge').classList.toggle('hidden', !v);
 });
-
 
 // ─── 동적 정보 항목 (Info Items) 추가 및 삭제 ───
 const infoBox = $('infoItemsBox');
@@ -966,15 +946,13 @@ function addInfoItem(labelVal = '', valueVal = '') {
     updateInfoPreview();
 }
 
-// 처음 화면에 보여줄 1개의 빈 항목
-addInfoItem();
+addInfoItem(); // 최초 빈칸 1개 세팅
 
 $('addInfoBtn').addEventListener('click', () => {
     addInfoItem();
 });
 
-
-// ─── 상징 키워드 태그 시스템 ───
+// ─── 상징 키워드 태그 시스템 (IME 완벽 지원) ───
 let kws = [];
 
 function rebuildTags() {
@@ -1030,15 +1008,16 @@ function addKw(raw) {
 }
 
 $('kwIn').addEventListener('keydown', function(e) {
+    // IME 조합 중인 이벤트는 건너뜁니다.
+    if (e.isComposing) return;
+    
     if (e.key === 'Enter' || e.key === ',') {
         e.preventDefault();
-        setTimeout(() => {
-            let val = this.value.replace(/,/g, '').trim();
-            if (val) {
-                addKw(val);
-                this.value = '';
-            }
-        }, 10);
+        let val = this.value.replace(/,/g, '').trim();
+        if (val) {
+            addKw(val);
+            this.value = '';
+        }
     } else if (e.key === 'Backspace' && this.value === '' && kws.length > 0) {
         kws.pop();
         rebuildTags();
@@ -1107,10 +1086,10 @@ $('saveBtn').addEventListener('click', function() {
             ctx.roundRect(0, H-4, W, 4, [0,0,20,20]);
             ctx.fill();
 
-            const sh  = () => { ctx.shadowColor='rgba(0,0,0,0.5)'; ctx.shadowBlur=8; ctx.shadowOffsetX=1; ctx.shadowOffsetY=2; };
-            const nsh = () => { ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetX=0; ctx.shadowOffsetY=0; };
-
-            sh(); // 그림자 활성화
+            // 텍스트/도형 그림자 설정 함수 분리
+            const txtShadow = () => { ctx.shadowColor='rgba(0,0,0,0.5)'; ctx.shadowBlur=8; ctx.shadowOffsetX=1; ctx.shadowOffsetY=2; };
+            const boxShadow = () => { ctx.shadowColor='rgba(0,0,0,0.18)'; ctx.shadowBlur=12; ctx.shadowOffsetX=0; ctx.shadowOffsetY=3; };
+            const noShadow  = () => { ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetX=0; ctx.shadowOffsetY=0; };
 
             // 상단 배지
             const bv = $('iBadge').value.trim().toUpperCase();
@@ -1120,13 +1099,13 @@ $('saveBtn').addEventListener('click', function() {
                 const tw = ctx.measureText(bv).width;
                 const bw = tw + 32, bh = 28, bx = W-30-bw, by = 30;
                 
-                nsh(); 
+                boxShadow(); // 배경 박스는 Box-shadow
                 ctx.fillStyle = acc;
                 ctx.beginPath();
                 ctx.roundRect(bx, by, bw, bh, 99);
                 ctx.fill();
                 
-                sh(); 
+                txtShadow(); // 텍스트는 Text-shadow
                 ctx.fillStyle = '#fff';
                 ctx.textBaseline = 'middle';
                 ctx.textAlign = 'left';
@@ -1137,6 +1116,7 @@ $('saveBtn').addEventListener('click', function() {
             // 위쪽 키워드 반짝이
             const kvTop = $('iKeyTop').value.trim();
             if (kvTop) {
+                txtShadow();
                 ctx.fillStyle = acc;
                 ctx.font = `800 10px "Nunito", sans-serif`;
                 ctx.letterSpacing = '2.5px';
@@ -1148,11 +1128,12 @@ $('saveBtn').addEventListener('click', function() {
                 ctx.letterSpacing = '0px';
             }
 
-            // 하단 메인 텍스트 영역 (bottom-up 계산)
+            // 하단 메인 텍스트 영역
             let cy = H - 44;
 
             const pv = $('iPhrase').value.trim();
             if (pv) {
+                txtShadow();
                 ctx.fillStyle = ctxt;
                 ctx.globalAlpha = 0.88;
                 ctx.font = `300 13.5px "Noto Sans KR", sans-serif`;
@@ -1165,7 +1146,7 @@ $('saveBtn').addEventListener('click', function() {
                 cy -= 13;
             }
 
-            nsh(); 
+            txtShadow(); // 구분선도 Text-shadow와 동일한 강도 적용
             ctx.fillStyle = acc;
             ctx.beginPath();
             ctx.roundRect(44, cy-3, 36, 3, 99);
@@ -1174,7 +1155,7 @@ $('saveBtn').addEventListener('click', function() {
 
             const nv = $('iName').value.trim().toUpperCase();
             if (nv) {
-                sh(); 
+                txtShadow();
                 ctx.fillStyle = ctxt;
                 ctx.font = `900 76px "${selectedNameFont}", "Nunito", sans-serif`;
                 ctx.letterSpacing = '-2px';
@@ -1185,30 +1166,20 @@ $('saveBtn').addEventListener('click', function() {
                 cy -= 76; cy -= 8;
             }
 
-            // 🎯 우측 정보 패널 (우측 정렬 적용 - 우측 끝선에서 시작)
-            nsh(); 
-            const rx = W - 44; // 정확한 우측 정렬 기준선 좌표 (800 - 44 = 756)
+            // 우측 정보 패널
+            noShadow(); 
+            const rx = W - 44;
             let ry = H - 48;
             const lfsz = 9, vfsz = 12;
 
-            // 1. 상징 키워드 영역
+            // 1. 상징 키워드 영역 (렌더링 순서 완벽 교정: [태그 -> 심볼 텍스트])
             if (kws.length > 0) {
-                ctx.font = `800 ${lfsz}px "Nunito", sans-serif`;
-                ctx.letterSpacing = '2px';
-                ctx.fillStyle = acc;
-                ctx.textBaseline = 'bottom';
-                ctx.textAlign = 'right'; // 우측 정렬
-                ctx.globalAlpha = 0.8;
-                ctx.fillText('SYMBOL', rx, ry - 4);
-                ctx.globalAlpha = 1;
-                ctx.letterSpacing = '0px';
-                ry -= lfsz + 10;
-
                 const boxH = 18; 
                 const maxRowWidth = 220;
                 let rows = [[]];
                 let rowWidths = [0];
 
+                // 키워드 줄바꿈 계산
                 kws.forEach(kw => {
                     ctx.font = `700 9.5px "Nunito", sans-serif`;
                     ctx.letterSpacing = '0.8px';
@@ -1226,13 +1197,13 @@ $('saveBtn').addEventListener('click', function() {
                 });
                 ctx.letterSpacing = '0px';
 
-                // 배열 역순 처리를 위해 Width 값들도 동일하게 복제하여 역순 처리
+                // 아래에서부터 위로 그리기 위해 역순 정렬
                 const reversedRows = [...rows].reverse();
                 const reversedWidths = [...rowWidths].reverse();
 
+                // 1) 둥근 키워드 태그들을 먼저 아래에 쌓습니다.
                 reversedRows.forEach((row, rIdx) => {
                     const boxY = ry - boxH;
-                    // 우측 끝선(rx)에서 해당 줄의 총 폭을 뺀 X좌표에서 그리기 시작
                     let lx = rx - reversedWidths[rIdx]; 
                     
                     row.forEach(({ kw, tw2 }) => {
@@ -1248,15 +1219,26 @@ $('saveBtn').addEventListener('click', function() {
                         ctx.textBaseline = 'middle';
                         ctx.textAlign = 'center'; 
                         
-                        // 박스 정중앙 텍스트 배치
                         ctx.fillText(kw.toUpperCase(), lx + (tw2 / 2), boxY + (boxH / 2) + 0.5);
                         
                         ctx.letterSpacing = '0px';
                         lx += tw2 + 5;
                     });
-                    ry -= boxH + 4;
+                    ry -= boxH + 4; // 다음 윗줄을 그리기 위해 Y축 이동
                 });
-                ry -= 12;
+
+                // 2) 태그들을 다 그린 후, 그 위(최상단)에 'SYMBOL' 라벨을 올립니다.
+                ctx.font = `800 ${lfsz}px "Nunito", sans-serif`;
+                ctx.letterSpacing = '2px';
+                ctx.fillStyle = acc;
+                ctx.textBaseline = 'bottom';
+                ctx.textAlign = 'right';
+                ctx.globalAlpha = 0.8;
+                ctx.fillText('SYMBOL', rx, ry);
+                ctx.globalAlpha = 1;
+                ctx.letterSpacing = '0px';
+                
+                ry -= lfsz + 16; // 다음 동적 정보 블록을 위해 Y축 이동
             }
 
             // 2. 동적 정보 리스트 데이터 수집
@@ -1266,9 +1248,9 @@ $('saveBtn').addEventListener('click', function() {
                     l: row.querySelector('.i-lbl').value.trim(),
                     v: row.querySelector('.i-val').value.trim()
                 };
-            }).filter(item => item.l || item.v).reverse(); // bottom-up 렌더링을 위해 역순 배치
+            }).filter(item => item.l || item.v).reverse();
 
-            // 정보 리스트 우측 정렬 렌더링
+            // 정보 리스트 렌더링
             ctx.textAlign = 'right'; 
             infoData.forEach(({l, v}) => {
                 ctx.fillStyle = ctxt;
@@ -1289,7 +1271,7 @@ $('saveBtn').addEventListener('click', function() {
                 ry -= lfsz + 16;
             });
 
-            // 둥근 모서리 클립 후 저장
+            // 둥근 모서리 클립
             const finalCv = document.createElement('canvas');
             finalCv.width = W; finalCv.height = H;
             const fCtx = finalCv.getContext('2d');
