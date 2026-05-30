@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>캐치프레이즈 에디터</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,400&family=Noto+Sans+KR:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --pg: #fdf2f7;
+            --panel: #ffffff;
+            --border: #f0dde8;
+            --border-focus: #e879a8;
+            --txt: #3d2233;
+            --sub: #b08ca0;
+            --inp: #fdf6fa;
+            --pink: #f06292;
+        }
+
+        body {
+            font-family: 'Nunito', 'Noto Sans KR', sans-serif;
+            background: var(--pg);
+            color: var(--txt);
+            min-height: 100vh;
+            padding: 40px 24px 60px;
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        /* ─── 에디터 패널 ─── */
+        .panel {
+            background: var(--panel);
+            border-radius: 20px;
+            width: 400px;
+            padding: 28px 26px 32px;
+            border: 1.5px solid var(--border);
+            box-shadow: 0 6px 32px rgba(240,98,146,0.08);
+        }
+
+        .panel-header {
+            margin-bottom: 22px;
+            padding-bottom: 18px;
+            border-bottom: 1.5px solid var(--border);
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            color: var(--txt);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-title::before {
+            content: '✦';
+            color: var(--pink);
+            font-size: 14px;
+        }
+
+        .panel-sub {
+            margin-top: 3px;
+            font-size: 11.5px;
+            color: var(--sub);
+            font-weight: 400;
+        }
+
+        /* 섹션 라벨 */
+        .sec {
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 1.8px;
+            text-transform: uppercase;
+            color: var(--pink);
+            margin: 22px 0 10px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .sec::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* 인풋 그룹 */
+        .ig { margin-bottom: 11px; }
+
+        .ig label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--sub);
+            margin-bottom: 5px;
+            letter-spacing: 0.3px;
+        }
+
+        .ig input[type=text],
+        .ig textarea {
+            width: 100%;
+            padding: 9px 13px;
+            border: 1.5px solid var(--border);
+            background: var(--inp);
+            border-radius: 10px;
+            font-family: 'Nunito', 'Noto Sans KR', sans-serif;
+            font-size: 13.5px;
+            color: var(--txt);
+            transition: border-color .15s, box-shadow .15s;
+            outline: none;
+        }
+
+        .ig input[type=text]:focus,
+        .ig textarea:focus {
+            border-color: var(--border-focus);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(240,98,146,0.10);
+        }
+
+        .ig textarea { resize: none; line-height: 1.65; }
+
+        /* 동적 정보 항목 리스트 */
+        .info-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .info-row input {
+            flex: 1;
+            padding: 8px 11px;
+            border: 1.5px solid var(--border);
+            background: var(--inp);
+            border-radius: 8px;
+            font-family: 'Nunito', 'Noto Sans KR', sans-serif;
+            font-size: 12.5px;
+            color: var(--txt);
+            outline: none;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .info-row input:focus {
+            border-color: var(--border-focus);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(240,98,146,0.10);
+        }
+        .info-row .del-btn {
+            background: none;
+            border: none;
+            color: var(--sub);
+            font-size: 14px;
+            cursor: pointer;
+            padding: 0 8px;
+            border-radius: 8px;
+            transition: background .15s, color .15s;
+        }
+        .info-row .del-btn:hover {
+            background: rgba(240,98,146,0.1);
+            color: var(--pink);
+        }
+        .add-btn {
+            width: 100%;
+            padding: 10px;
+            border: 1.5px dashed var(--border);
+            background: var(--inp);
+            color: var(--pink);
+            font-weight: 700;
+            font-size: 11.5px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all .15s;
+            margin-bottom: 8px;
+        }
+        .add-btn:hover {
+            border-color: var(--pink);
+            background: #fff5f9;
+        }
+
+        /* 파일 업로드 */
+        .upload-box {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 11px;
+            border: 1.5px dashed var(--border);
+            border-radius: 10px;
+            background: var(--inp);
+            cursor: pointer;
+            transition: border-color .15s, background .15s;
+            overflow: hidden;
+        }
+        .upload-box:hover { border-color: var(--pink); background: #fff5f9; }
+        .upload-box input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+        .upload-box span {
+            font-size: 12.5px;
+            color: var(--sub);
+            font-weight: 600;
+            pointer-events: none;
+        }
+        .upload-icon { font-size: 14px; pointer-events: none; }
+
+        /* 슬라이더 */
+        .sl-group { margin-bottom: 11px; }
+        .sl-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .sl-row label { font-size: 11px; font-weight: 700; color: var(--sub); letter-spacing: 0.3px; }
+        .sl-val {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--pink);
+            min-width: 36px;
+            text-align: right;
+        }
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: var(--border);
+            border-radius: 99px;
+            cursor: pointer;
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--pink);
+            box-shadow: 0 2px 6px rgba(240,98,146,0.35);
+            cursor: pointer;
+        }
+
+        /* 색상 피커 */
+        .color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .ci {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 8px 11px;
+            background: var(--inp);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: border-color .15s;
+        }
+        .ci:hover { border-color: var(--pink); }
+        .ci label { font-size: 11px; font-weight: 700; color: var(--sub); cursor: pointer; flex: 1; }
+        .ci input[type=color] {
+            -webkit-appearance: none;
+            width: 22px; height: 22px;
+            border: 1.5px solid rgba(0,0,0,0.1);
+            border-radius: 6px;
+            cursor: pointer;
+            padding: 0;
+            background: none;
+            flex-shrink: 0;
+        }
+        .ci input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+        .ci input[type=color]::-webkit-color-swatch { border: none; border-radius: 4px; }
+
+        /* 키워드 태그 */
+        .kw-box {
+            border: 1.5px solid var(--border);
+            background: var(--inp);
+            border-radius: 10px;
+            padding: 7px 10px;
+            min-height: 42px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            align-items: center;
+            cursor: text;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .kw-box:focus-within {
+            border-color: var(--border-focus);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(240,98,146,0.10);
+        }
+        .kw-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 9px 3px 10px;
+            background: linear-gradient(135deg, #f8a5c2, #f06292);
+            color: #fff;
+            font-size: 11.5px;
+            font-weight: 700;
+            border-radius: 99px;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .kw-tag .x {
+            cursor: pointer;
+            font-size: 12px;
+            line-height: 1;
+            opacity: .75;
+            transition: opacity .1s;
+            flex-shrink: 0;
+        }
+        .kw-tag .x:hover { opacity: 1; }
+        #kwIn {
+            border: none; outline: none;
+            background: transparent;
+            font-family: 'Nunito','Noto Sans KR',sans-serif;
+            font-size: 13px;
+            min-width: 90px;
+            flex: 1;
+            color: var(--txt);
+            padding: 2px 4px;
+        }
+        .kw-hint { font-size: 11px; color: var(--sub); margin-top: 5px; }
+
+        /* 이름 폰트 선택 */
+        .font-section { margin-bottom: 4px; }
+        .font-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 6px;
+        }
+        .font-pill {
+            padding: 5px 11px;
+            border: 1.5px solid var(--border);
+            border-radius: 99px;
+            background: var(--inp);
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--sub);
+            transition: all .15s;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .font-pill:hover { border-color: var(--pink); color: var(--pink); background: #fff; }
+        .font-pill.active {
+            background: var(--pink);
+            border-color: var(--pink);
+            color: #fff;
+            font-weight: 700;
+        }
+        .font-pill span { pointer-events: none; }
+
+        /* 저장 버튼 */
+        .save-btn {
+            width: 100%;
+            margin-top: 14px;
+            padding: 13px;
+            background: linear-gradient(135deg, #f8a5c2, #e91e8c);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            box-shadow: 0 4px 18px rgba(240,98,146,0.35);
+            transition: transform .12s, box-shadow .12s, opacity .12s;
+        }
+        .save-btn:hover { transform: translateY(-1px); box-shadow: 0 7px 22px rgba(240,98,146,0.40); }
+        .save-btn:active { transform: translateY(1px); box-shadow: 0 2px 10px rgba(240,98,146,0.30); }
+
+        .hidden { display: none !important; }
+
+        /* ─── 프리뷰 패널 (Sticky 스크롤 애니메이션) ─── */
+        .preview-col {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+            position: sticky;
+            top: 40px;
+            z-index: 10;
+        }
+        .preview-tag {
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--sub);
+        }
+
+        /* 카드 800×600 */
+        #card {
+            --acc: #f06292;
+            --ctxt: #ffffff;
+            --cbg: #1a0d12;
+        }
+
+        .card {
+            width: 800px;
+            height: 600px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 20px;
+            background: var(--cbg);
+            box-shadow: 0 16px 56px rgba(0,0,0,0.22);
+        }
+
+        /* 이미지 레이어 */
+        #cImg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center center;
+            display: none;
+            z-index: 1;
+            transform-origin: center center;
+            transition: transform .05s;
+            will-change: transform;
+        }
+
+        /* 하단에서 올라오는 그라데이션 오버레이 */
+        .c-grad {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* 공통 텍스트 외부 광선 */
+        .c-badge,
+        .c-keytop-sparkle,
+        .c-keytop-txt,
+        .c-phrase,
+        .c-name {
+            text-shadow: 1px 2px 8px rgba(0,0,0,0.5);
+        }
+
+        /* 상단 배지 */
+        .c-badge {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            z-index: 5;
+            background: var(--acc);
+            color: #fff;
+            font-family: 'Nunito', sans-serif;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 7px 16px;
+            border-radius: 99px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.18);
+        }
+
+        /* 상단 키워드 (반짝이 포함) */
+        .c-keytop {
+            position: absolute;
+            top: 34px;
+            left: 44px;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .c-keytop-sparkle {
+            font-size: 10px;
+            color: var(--acc);
+            opacity: .85;
+            animation: sparkle-pulse 2s ease-in-out infinite;
+        }
+        .c-keytop-txt {
+            font-family: 'Nunito', sans-serif;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: var(--acc);
+            opacity: .85;
+        }
+        @keyframes sparkle-pulse {
+            0%,100% { opacity: .55; transform: scale(1); }
+            50%      { opacity: 1;   transform: scale(1.3); }
+        }
+
+        /* 메인 텍스트 블록 */
+        .c-main {
+            position: absolute;
+            bottom: 44px;
+            left: 44px;
+            right: 250px;
+            z-index: 5;
+        }
+
+        .c-name {
+            font-size: 76px;
+            font-weight: 900;
+            line-height: 0.92;
+            letter-spacing: -2px;
+            color: var(--ctxt);
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        .c-divider {
+            width: 36px;
+            height: 3px;
+            background: var(--acc);
+            border-radius: 99px;
+            margin-bottom: 13px;
+            box-shadow: 1px 2px 8px rgba(0,0,0,0.5);
+        }
+
+        /* 캐치프레이즈 폰트 Noto Sans로 고정 */
+        .c-phrase {
+            font-family: 'Noto Sans KR', sans-serif;
+            font-size: 13.5px;
+            font-weight: 300;
+            line-height: 1.8;
+            color: var(--ctxt);
+            opacity: .88;
+            white-space: pre-wrap;
+            word-break: keep-all;
+            max-width: 440px;
+        }
+
+        /* 우측 정보 패널 (우측 정렬 적용) */
+        .c-info {
+            position: absolute;
+            right: 44px;
+            top: 0;
+            bottom: 0;
+            width: 200px;
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end; /* 우측 정렬 */
+            text-align: right;     /* 텍스트 우측 정렬 */
+            padding-bottom: 48px;
+        }
+
+        #pInfoList {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 16px;
+            width: 100%;
+            margin-bottom: 16px;
+        }
+
+        .c-info-block {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            width: 100%;
+        }
+
+        .c-info-label {
+            font-family: 'Nunito', sans-serif;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--acc);
+            opacity: .8;
+            margin-bottom: 2px;
+        }
+
+        .c-info-value {
+            font-family: 'Noto Sans KR', sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--ctxt);
+            opacity: .8;
+            line-height: 1.5;
+        }
+
+        /* 상징 키워드 영역 (우측 정렬 적용) */
+        .c-kwtags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            justify-content: flex-end; /* 우측 정렬 */
+        }
+
+        .c-kwtag {
+            font-family: 'Nunito', sans-serif;
+            font-size: 9.5px;
+            font-weight: 700;
+            letter-spacing: .8px;
+            border: 1.5px solid var(--acc);
+            color: var(--acc);
+            padding: 2px 8px;
+            border-radius: 99px;
+            background: rgba(255,255,255,0.06);
+        }
+
+        /* 하단 장식 선 */
+        .c-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0; right: 0;
+            height: 4px;
+            background: var(--acc);
+            z-index: 6;
+            border-radius: 0 0 20px 20px;
+        }
+
+        /* ─── 모바일 반응형 ─── */
+        @media (max-width: 880px) {
+            body { padding: 20px 16px 40px; flex-direction: column; align-items: center; gap: 24px; }
+            .panel { width: 100%; max-width: 480px; padding: 20px 18px 24px; }
+            .preview-col { width: 100%; max-width: 480px; align-items: center; position: static; }
+            .card-scaler { width: 100%; max-width: 480px; aspect-ratio: 4/3; position: relative; }
+            .card { width: 800px; height: 600px; transform-origin: top left; position: absolute; top: 0; left: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">캐치프레이즈 에디터</div>
+        <div class="panel-sub">character profile card generator ✦</div>
+    </div>
+
+    <div class="sec">Image</div>
+
+    <div class="ig">
+        <label>배경 이미지 업로드</label>
+        <div class="upload-box">
+            <span class="upload-icon">🖼</span>
+            <span id="fileName">파일 첨부</span>
+            <input type="file" id="imgIn" accept="image/*">
+        </div>
+    </div>
+
+    <div class="sl-group">
+        <div class="sl-row"><label>이미지 위치 (X축)</label><span class="sl-val" id="vPosX">50%</span></div>
+        <input type="range" id="sPosX" min="0" max="100" value="50">
+    </div>
+    <div class="sl-group">
+        <div class="sl-row"><label>이미지 위치 (Y축)</label><span class="sl-val" id="vPosY">50%</span></div>
+        <input type="range" id="sPosY" min="0" max="100" value="50">
+    </div>
+    <div class="sl-group">
+        <div class="sl-row"><label>이미지 크기 (확대/축소)</label><span class="sl-val" id="vZoom">100%</span></div>
+        <input type="range" id="sZoom" min="60" max="200" value="100">
+    </div>
+
+    <div class="sec">Text</div>
+
+    <div class="ig">
+        <label>이름 (NAME)</label>
+        <input type="text" id="iName" placeholder="">
+    </div>
+
+    <div class="ig">
+        <label>핵심 키워드</label>
+        <input type="text" id="iKeyTop" placeholder="">
+    </div>
+
+    <div class="ig">
+        <label>캐치프레이즈</label>
+        <textarea id="iPhrase" rows="3" placeholder=""></textarea>
+    </div>
+    <div class="ig">
+        <label>배지 텍스트</label>
+        <input type="text" id="iBadge" placeholder="">
+    </div>
+
+    <div class="sec">Info</div>
+
+    <div id="infoItemsBox"></div>
+    <button id="addInfoBtn" class="add-btn">+ 항목 추가</button>
+
+    <div class="sec">Keywords</div>
+
+    <div class="ig">
+        <label>상징 키워드 (Enter로 추가)</label>
+        <div class="kw-box" id="kwBox">
+            <input type="text" id="kwIn" placeholder="" autocomplete="off">
+        </div>
+    </div>
+
+    <div class="sec">Font</div>
+    <div class="font-section">
+        <div class="ig" style="margin-bottom:6px;">
+            <label>이름 폰트</label>
+            <div class="font-pills" id="fontPills">
+                <div class="font-pill active" data-font="Nunito" style="font-family:'Nunito',sans-serif"><span>Nunito</span></div>
+                <div class="font-pill" data-font="Playfair Display" style="font-family:'Playfair Display',serif"><span>Playfair</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sec">Colors</div>
+    <div class="color-grid">
+        <div class="ci"><input type="color" id="cAcc" value="#f06292"><label for="cAcc">강조 컬러</label></div>
+        <div class="ci"><input type="color" id="cBg" value="#1a0d12"><label for="cBg">배경 컬러</label></div>
+        <div class="ci"><input type="color" id="cTxt" value="#ffffff"><label for="cTxt">텍스트 컬러</label></div>
+    </div>
+
+    <div class="sec" style="margin-top:14px;">Gradient</div>
+    <div class="sl-group">
+        <div class="sl-row"><label>그라데이션 색조 (검정 ↔ 흰색)</label><span class="sl-val" id="vGrad">0</span></div>
+        <input type="range" id="sGrad" min="0" max="255" value="0">
+    </div>
+    <div class="sl-group">
+        <div class="sl-row"><label>그라데이션 강도</label><span class="sl-val" id="vGradA">85%</span></div>
+        <input type="range" id="sGradA" min="0" max="100" value="85">
+    </div>
+    <div class="sl-group">
+        <div class="sl-row"><label>그라데이션 높이</label><span class="sl-val" id="vGradH">70%</span></div>
+        <input type="range" id="sGradH" min="20" max="100" value="70">
+    </div>
+
+    <button class="save-btn" id="saveBtn">✦ 고화질 이미지 저장</button>
+</div>
+
+<div class="preview-col">
+    <div class="preview-tag">✦ live preview</div>
+
+    <div class="card-scaler" id="cardScaler">
+        <div class="card" id="card">
+            <img id="cImg" alt="">
+            <div class="c-grad" id="cGrad"></div>
+
+            <div class="c-badge hidden" id="pBadge"></div>
+
+            <div class="c-keytop hidden" id="pKeyTop">
+                <span class="c-keytop-sparkle">✦</span>
+                <span class="c-keytop-txt" id="pKeyTopTxt"></span>
+            </div>
+
+            <div class="c-main">
+                <h1 class="c-name hidden" id="pName" style="font-family:'Nunito',sans-serif;"></h1>
+                <div class="c-divider"></div>
+                <p class="c-phrase" id="pPhrase"></p>
+            </div>
+
+            <div class="c-info">
+                <div id="pInfoList"></div>
+                
+                <div class="c-info-block hidden" id="pKwBlock">
+                    <div class="c-info-label">Symbol</div>
+                    <div class="c-kwtags" id="pKwTags"></div>
+                </div>
+            </div>
+
+            <div class="c-bar"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const card = $('card');
+const setV = (n, v) => card.style.setProperty(n, v);
+
+// ─── 모바일 카드 스케일 ───
+function scaleCard() {
+    const scaler = $('cardScaler');
+    const isMobile = window.innerWidth <= 880;
+    if (isMobile) {
+        const availW = Math.min(window.innerWidth - 32, 480);
+        const scale  = availW / 800;
+        card.style.transform = `scale(${scale})`;
+        card.style.transition = '';
+        scaler.style.height = (600 * scale) + 'px';
+    } else {
+        card.style.transform = '';
+        scaler.style.height = '';
+    }
+}
+scaleCard();
+window.addEventListener('resize', scaleCard);
+
+// ─── 스크롤 시 이미지 패럴랙스 ───
+function updateParallax() {
+    const cImg = $('cImg');
+    if (!cImg || cImg.style.display === 'none') return;
+
+    const scaler  = $('cardScaler');
+    const rect    = scaler.getBoundingClientRect();
+    const vh      = window.innerHeight;
+
+    const center  = (rect.top + rect.height / 2);
+    const norm    = (center - vh / 2) / (vh / 2 + rect.height / 2);
+
+    const zoom    = parseInt($('sZoom').value) / 100;
+    const posX    = parseInt($('sPosX').value);
+    const posY    = parseInt($('sPosY').value);
+    
+    const shiftX  = (posX - 50) * 8;
+    const baseShiftY = (posY - 50) * 6;
+    const parallaxShift = norm * 40;
+
+    cImg.style.transition = 'none';
+    cImg.style.transform  = `translate(${shiftX}px, ${baseShiftY + parallaxShift}px) scale(${zoom})`;
+}
+
+window.addEventListener('scroll', updateParallax, { passive: true });
+
+// ─── 그라데이션 업데이트 ───
+function updateGrad() {
+    const g = parseInt($('sGrad').value);
+    const a = parseInt($('sGradA').value) / 100;
+    const h = parseInt($('sGradH').value);
+    $('cGrad').style.background = `linear-gradient(to top,
+        rgba(${g},${g},${g},${a.toFixed(2)}) 0%,
+        rgba(${g},${g},${g},${(a*0.6).toFixed(2)}) ${Math.round(h*0.45)}%,
+        rgba(${g},${g},${g},0) ${h}%)`;
+}
+
+['sGrad','sGradA','sGradH'].forEach(id => {
+    $(id).addEventListener('input', () => {
+        $('vGrad').textContent  = $('sGrad').value;
+        $('vGradA').textContent = $('sGradA').value + '%';
+        $('vGradH').textContent = $('sGradH').value + '%';
+        updateGrad();
+    });
+});
+updateGrad();
+
+// ─── 색상 ───
+const colorMap = { cAcc: '--acc', cBg: '--cbg', cTxt: '--ctxt' };
+Object.entries(colorMap).forEach(([id, v]) => {
+    const el = $(id);
+    const apply = () => setV(v, el.value);
+    el.addEventListener('input', apply);
+    apply();
+});
+
+// ─── 이미지 업로드 + 확대/위치 ───
+let rawImg  = new Image();
+let imgReady = false;
+
+function applyImgTransform() {
+    if (!imgReady) return;
+    const zoom    = parseInt($('sZoom').value) / 100;
+    const posX    = parseInt($('sPosX').value);
+    const posY    = parseInt($('sPosY').value);
+    const shiftX  = (posX - 50) * 8;
+    const shiftY  = (posY - 50) * 6;
+    
+    const cImg    = $('cImg');
+    cImg.style.transition = 'transform .05s';
+    cImg.style.transform  = `translate(${shiftX}px, ${shiftY}px) scale(${zoom})`;
+}
+
+$('imgIn').addEventListener('change', function(e) {
+    const f = e.target.files[0];
+    if (!f) return;
+    $('fileName').textContent = f.name.length > 22 ? f.name.slice(0,22)+'…' : f.name;
+    const rd = new FileReader();
+    rd.onload = ev => {
+        const src = ev.target.result;
+        const ci  = $('cImg');
+        ci.src = src;
+        ci.style.display = 'block';
+        rawImg = new Image();
+        rawImg.onload = () => { imgReady = true; applyImgTransform(); };
+        rawImg.src = src;
+    };
+    rd.readAsDataURL(f);
+});
+
+$('sPosX').addEventListener('input', function() {
+    $('vPosX').textContent = this.value + '%';
+    applyImgTransform();
+});
+
+$('sPosY').addEventListener('input', function() {
+    $('vPosY').textContent = this.value + '%';
+    applyImgTransform();
+});
+
+$('sZoom').addEventListener('input', function() {
+    $('vZoom').textContent = this.value + '%';
+    applyImgTransform();
+});
+
+// ─── 이름 폰트 선택 ───
+let selectedNameFont = 'Nunito';
+
+document.querySelectorAll('#fontPills .font-pill').forEach(pill => {
+    pill.addEventListener('click', function() {
+        document.querySelectorAll('#fontPills .font-pill').forEach(p => p.classList.remove('active'));
+        this.classList.add('active');
+        selectedNameFont = this.dataset.font;
+        const ff = `'${selectedNameFont}', serif, sans-serif`;
+        $('pName').style.fontFamily = ff;
+    });
+});
+
+// ─── 일반 텍스트 싱크 ───
+$('iName').addEventListener('input', function() {
+    const v = this.value.toUpperCase();
+    $('pName').textContent = v;
+    $('pName').classList.toggle('hidden', !v.trim());
+});
+
+$('iKeyTop').addEventListener('input', function() {
+    const v = this.value.trim();
+    $('pKeyTopTxt').textContent = v ? v.toUpperCase() : '';
+    $('pKeyTop').classList.toggle('hidden', !v);
+});
+
+$('iPhrase').addEventListener('input', function() {
+    $('pPhrase').textContent = this.value;
+});
+
+$('iBadge').addEventListener('input', function() {
+    const v = this.value.trim().toUpperCase();
+    $('pBadge').textContent = v;
+    $('pBadge').classList.toggle('hidden', !v);
+});
+
+
+// ─── 동적 정보 항목 (Info Items) 추가 및 삭제 ───
+const infoBox = $('infoItemsBox');
+const pInfoList = $('pInfoList');
+
+function updateInfoPreview() {
+    pInfoList.innerHTML = '';
+    const rows = document.querySelectorAll('.info-row');
+    rows.forEach(row => {
+        const l = row.querySelector('.i-lbl').value.trim();
+        const v = row.querySelector('.i-val').value.trim();
+        if (!l && !v) return;
+
+        const block = document.createElement('div');
+        block.className = 'c-info-block';
+        block.innerHTML = `
+            <div class="c-info-label">${l.toUpperCase()}</div>
+            <div class="c-info-value">${v}</div>
+        `;
+        pInfoList.appendChild(block);
+    });
+}
+
+function addInfoItem(labelVal = '', valueVal = '') {
+    const div = document.createElement('div');
+    div.className = 'info-row';
+    div.innerHTML = `
+        <input type="text" class="i-lbl" value="${labelVal}" placeholder="">
+        <input type="text" class="i-val" value="${valueVal}" placeholder="">
+        <button class="del-btn" tabindex="-1">✕</button>
+    `;
+    infoBox.appendChild(div);
+
+    const inputs = div.querySelectorAll('input');
+    inputs.forEach(inp => inp.addEventListener('input', updateInfoPreview));
+
+    div.querySelector('.del-btn').addEventListener('click', () => {
+        div.remove();
+        updateInfoPreview();
+    });
+    
+    updateInfoPreview();
+}
+
+// 처음 화면에 보여줄 1개의 빈 항목
+addInfoItem();
+
+$('addInfoBtn').addEventListener('click', () => {
+    addInfoItem();
+});
+
+
+// ─── 상징 키워드 태그 시스템 ───
+let kws = [];
+
+function rebuildTags() {
+    const box   = $('kwBox');
+    const input = $('kwIn');
+
+    box.querySelectorAll('.kw-tag').forEach(t => t.remove());
+
+    kws.slice().forEach(kw => {
+        const tag = document.createElement('span');
+        tag.className = 'kw-tag';
+
+        const txt = document.createElement('span');
+        txt.textContent = kw;
+
+        const x = document.createElement('span');
+        x.className = 'x';
+        x.textContent = '✕';
+        x.setAttribute('tabindex', '-1');
+
+        x.addEventListener('mousedown', e => e.preventDefault());
+
+        x.addEventListener('click', e => {
+            e.stopPropagation();
+            const idx = kws.indexOf(kw);
+            if (idx !== -1) kws.splice(idx, 1);
+            rebuildTags();
+            $('kwIn').focus();
+        });
+
+        tag.appendChild(txt);
+        tag.appendChild(x);
+        box.insertBefore(tag, input);
+    });
+
+    const ptags = $('pKwTags');
+    ptags.innerHTML = '';
+    kws.forEach(kw => {
+        const t = document.createElement('div');
+        t.className = 'c-kwtag';
+        t.textContent = kw;
+        ptags.appendChild(t);
+    });
+    $('pKwBlock').classList.toggle('hidden', kws.length === 0);
+}
+
+function addKw(raw) {
+    raw.split(',').forEach(part => {
+        const w = part.trim();
+        if (w && !kws.includes(w)) kws.push(w);
+    });
+    rebuildTags();
+}
+
+$('kwIn').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        setTimeout(() => {
+            let val = this.value.replace(/,/g, '').trim();
+            if (val) {
+                addKw(val);
+                this.value = '';
+            }
+        }, 10);
+    } else if (e.key === 'Backspace' && this.value === '' && kws.length > 0) {
+        kws.pop();
+        rebuildTags();
+    }
+});
+
+$('kwBox').addEventListener('click', function(e) {
+    if (e.target.classList.contains('x')) return;
+    $('kwIn').focus();
+});
+
+
+// ─── Canvas 고화질 렌더링 및 저장 ───
+$('saveBtn').addEventListener('click', function() {
+    const btn  = this;
+    const name = $('iName').value.trim() || 'character';
+    btn.textContent = '렌더링 중...';
+    btn.style.opacity = '.6';
+    btn.style.pointerEvents = 'none';
+
+    setTimeout(() => {
+        document.fonts.ready.then(() => {
+            const W = 800, H = 600;
+            const cv  = document.createElement('canvas');
+            cv.width  = W; cv.height = H;
+            const ctx = cv.getContext('2d');
+
+            // 배경
+            ctx.fillStyle = $('cBg').value;
+            ctx.fillRect(0, 0, W, H);
+
+            // 이미지
+            if (imgReady && rawImg.src) {
+                const zoom  = parseInt($('sZoom').value) / 100;
+                const posX  = parseInt($('sPosX').value);
+                const posY  = parseInt($('sPosY').value);
+                const iw    = rawImg.naturalWidth;
+                const ih    = rawImg.naturalHeight;
+                const baseScale = Math.max(W / iw, H / ih);
+                const scale = baseScale * zoom;
+                const dw = iw * scale, dh = ih * scale;
+                const cx = W / 2, cy = H / 2;
+                const shiftX = (posX - 50) * 8;
+                const shiftY = (posY - 50) * 6;
+                ctx.drawImage(rawImg, cx + shiftX - dw/2, cy + shiftY - dh/2, dw, dh);
+            }
+
+            // 그라데이션
+            const gv = parseInt($('sGrad').value);
+            const ga = parseInt($('sGradA').value) / 100;
+            const gh = parseInt($('sGradH').value) / 100;
+            const gY = H * (1 - gh);
+            const grad = ctx.createLinearGradient(0, H, 0, gY);
+            grad.addColorStop(0,    `rgba(${gv},${gv},${gv},${ga.toFixed(2)})`);
+            grad.addColorStop(0.45, `rgba(${gv},${gv},${gv},${(ga*0.6).toFixed(2)})`);
+            grad.addColorStop(1,    `rgba(${gv},${gv},${gv},0)`);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+
+            const acc  = $('cAcc').value;
+            const ctxt = $('cTxt').value;
+
+            // 하단 바
+            ctx.fillStyle = acc;
+            ctx.beginPath();
+            ctx.roundRect(0, H-4, W, 4, [0,0,20,20]);
+            ctx.fill();
+
+            const sh  = () => { ctx.shadowColor='rgba(0,0,0,0.5)'; ctx.shadowBlur=8; ctx.shadowOffsetX=1; ctx.shadowOffsetY=2; };
+            const nsh = () => { ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetX=0; ctx.shadowOffsetY=0; };
+
+            sh(); // 그림자 활성화
+
+            // 상단 배지
+            const bv = $('iBadge').value.trim().toUpperCase();
+            if (bv) {
+                ctx.font = '800 11px "Nunito", sans-serif';
+                ctx.letterSpacing = '1.5px';
+                const tw = ctx.measureText(bv).width;
+                const bw = tw + 32, bh = 28, bx = W-30-bw, by = 30;
+                
+                nsh(); 
+                ctx.fillStyle = acc;
+                ctx.beginPath();
+                ctx.roundRect(bx, by, bw, bh, 99);
+                ctx.fill();
+                
+                sh(); 
+                ctx.fillStyle = '#fff';
+                ctx.textBaseline = 'middle';
+                ctx.textAlign = 'left';
+                ctx.fillText(bv, bx+16, by+bh/2+1);
+                ctx.letterSpacing = '0px';
+            }
+
+            // 위쪽 키워드 반짝이
+            const kvTop = $('iKeyTop').value.trim();
+            if (kvTop) {
+                ctx.fillStyle = acc;
+                ctx.font = `800 10px "Nunito", sans-serif`;
+                ctx.letterSpacing = '2.5px';
+                ctx.textBaseline = 'top';
+                ctx.textAlign = 'left';
+                ctx.globalAlpha = 0.85;
+                ctx.fillText('✦ ' + kvTop.toUpperCase(), 44, 38);
+                ctx.globalAlpha = 1;
+                ctx.letterSpacing = '0px';
+            }
+
+            // 하단 메인 텍스트 영역 (bottom-up 계산)
+            let cy = H - 44;
+
+            const pv = $('iPhrase').value.trim();
+            if (pv) {
+                ctx.fillStyle = ctxt;
+                ctx.globalAlpha = 0.88;
+                ctx.font = `300 13.5px "Noto Sans KR", sans-serif`;
+                ctx.textBaseline = 'bottom';
+                ctx.textAlign = 'left';
+                const lines = pv.split('\n').reverse();
+                const lh = 13.5 * 1.8;
+                lines.forEach(ln => { ctx.fillText(ln, 44, cy); cy -= lh; });
+                ctx.globalAlpha = 1;
+                cy -= 13;
+            }
+
+            nsh(); 
+            ctx.fillStyle = acc;
+            ctx.beginPath();
+            ctx.roundRect(44, cy-3, 36, 3, 99);
+            ctx.fill();
+            cy -= 13;
+
+            const nv = $('iName').value.trim().toUpperCase();
+            if (nv) {
+                sh(); 
+                ctx.fillStyle = ctxt;
+                ctx.font = `900 76px "${selectedNameFont}", "Nunito", sans-serif`;
+                ctx.letterSpacing = '-2px';
+                ctx.textBaseline = 'bottom';
+                ctx.textAlign = 'left';
+                ctx.fillText(nv, 44, cy);
+                ctx.letterSpacing = '0px';
+                cy -= 76; cy -= 8;
+            }
+
+            // 🎯 우측 정보 패널 (우측 정렬 적용 - 우측 끝선에서 시작)
+            nsh(); 
+            const rx = W - 44; // 정확한 우측 정렬 기준선 좌표 (800 - 44 = 756)
+            let ry = H - 48;
+            const lfsz = 9, vfsz = 12;
+
+            // 1. 상징 키워드 영역
+            if (kws.length > 0) {
+                ctx.font = `800 ${lfsz}px "Nunito", sans-serif`;
+                ctx.letterSpacing = '2px';
+                ctx.fillStyle = acc;
+                ctx.textBaseline = 'bottom';
+                ctx.textAlign = 'right'; // 우측 정렬
+                ctx.globalAlpha = 0.8;
+                ctx.fillText('SYMBOL', rx, ry - 4);
+                ctx.globalAlpha = 1;
+                ctx.letterSpacing = '0px';
+                ry -= lfsz + 10;
+
+                const boxH = 18; 
+                const maxRowWidth = 220;
+                let rows = [[]];
+                let rowWidths = [0];
+
+                kws.forEach(kw => {
+                    ctx.font = `700 9.5px "Nunito", sans-serif`;
+                    ctx.letterSpacing = '0.8px';
+                    const tw2 = ctx.measureText(kw.toUpperCase()).width + 16;
+                    const cur = rows.length - 1;
+                    const spacing = rows[cur].length > 0 ? 5 : 0;
+                    
+                    if (rowWidths[cur] + spacing + tw2 > maxRowWidth && rows[cur].length > 0) {
+                        rows.push([{ kw, tw2 }]);
+                        rowWidths.push(tw2);
+                    } else {
+                        rows[cur].push({ kw, tw2 });
+                        rowWidths[cur] += spacing + tw2;
+                    }
+                });
+                ctx.letterSpacing = '0px';
+
+                // 배열 역순 처리를 위해 Width 값들도 동일하게 복제하여 역순 처리
+                const reversedRows = [...rows].reverse();
+                const reversedWidths = [...rowWidths].reverse();
+
+                reversedRows.forEach((row, rIdx) => {
+                    const boxY = ry - boxH;
+                    // 우측 끝선(rx)에서 해당 줄의 총 폭을 뺀 X좌표에서 그리기 시작
+                    let lx = rx - reversedWidths[rIdx]; 
+                    
+                    row.forEach(({ kw, tw2 }) => {
+                        ctx.font = `700 9.5px "Nunito", sans-serif`;
+                        ctx.letterSpacing = '0.8px';
+                        ctx.strokeStyle = acc;
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.roundRect(lx, boxY, tw2, boxH, 99); 
+                        ctx.stroke();
+                        
+                        ctx.fillStyle = acc;
+                        ctx.textBaseline = 'middle';
+                        ctx.textAlign = 'center'; 
+                        
+                        // 박스 정중앙 텍스트 배치
+                        ctx.fillText(kw.toUpperCase(), lx + (tw2 / 2), boxY + (boxH / 2) + 0.5);
+                        
+                        ctx.letterSpacing = '0px';
+                        lx += tw2 + 5;
+                    });
+                    ry -= boxH + 4;
+                });
+                ry -= 12;
+            }
+
+            // 2. 동적 정보 리스트 데이터 수집
+            const domRows = document.querySelectorAll('.info-row');
+            const infoData = Array.from(domRows).map(row => {
+                return {
+                    l: row.querySelector('.i-lbl').value.trim(),
+                    v: row.querySelector('.i-val').value.trim()
+                };
+            }).filter(item => item.l || item.v).reverse(); // bottom-up 렌더링을 위해 역순 배치
+
+            // 정보 리스트 우측 정렬 렌더링
+            ctx.textAlign = 'right'; 
+            infoData.forEach(({l, v}) => {
+                ctx.fillStyle = ctxt;
+                ctx.font = `500 ${vfsz}px "Noto Sans KR", sans-serif`;
+                ctx.textBaseline = 'bottom';
+                ctx.globalAlpha = 0.8;
+                ctx.fillText(v, rx, ry);
+                ctx.globalAlpha = 1;
+                ry -= vfsz + 4;
+
+                ctx.fillStyle = acc;
+                ctx.font = `800 ${lfsz}px "Nunito", sans-serif`;
+                ctx.letterSpacing = '2px';
+                ctx.globalAlpha = 0.8;
+                ctx.fillText(l.toUpperCase(), rx, ry);
+                ctx.globalAlpha = 1;
+                ctx.letterSpacing = '0px';
+                ry -= lfsz + 16;
+            });
+
+            // 둥근 모서리 클립 후 저장
+            const finalCv = document.createElement('canvas');
+            finalCv.width = W; finalCv.height = H;
+            const fCtx = finalCv.getContext('2d');
+            fCtx.beginPath();
+            fCtx.roundRect(0, 0, W, H, 20);
+            fCtx.clip();
+            fCtx.drawImage(cv, 0, 0);
+
+            const link = document.createElement('a');
+            link.download = name + '_profile.png';
+            link.href = finalCv.toDataURL('image/png');
+            link.click();
+
+            btn.textContent = '✦ 고화질 이미지 저장';
+            btn.style.opacity = '1';
+            btn.style.pointerEvents = 'auto';
+        });
+    }, 150);
+});
+</script>
+</body>
+</html>
