@@ -125,14 +125,17 @@
 
         .ig textarea { resize: none; line-height: 1.65; }
 
-        /* 동적 정보 항목 리스트 */
+        /* 동적 정보 항목 리스트 (X 버튼 이탈 방지 완벽 적용) */
         .info-row {
             display: flex;
             gap: 6px;
             margin-bottom: 8px;
+            width: 100%;
+            align-items: center;
         }
         .info-row input {
-            flex: 1;
+            flex: 1 1 0;
+            min-width: 0; /* flex box 안에서 기본 사이즈보다 작아질 수 있도록 허용 */
             padding: 8px 11px;
             border: 1.5px solid var(--border);
             background: var(--inp);
@@ -149,14 +152,18 @@
             box-shadow: 0 0 0 3px rgba(240,98,146,0.10);
         }
         .info-row .del-btn {
+            flex: 0 0 auto; /* X 버튼은 찌그러지지 않도록 크기 고정 */
             background: none;
             border: none;
             color: var(--sub);
             font-size: 14px;
             cursor: pointer;
-            padding: 0 8px;
+            padding: 4px 8px;
             border-radius: 8px;
             transition: background .15s, color .15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .info-row .del-btn:hover {
             background: rgba(240,98,146,0.1);
@@ -371,7 +378,7 @@
 
         .hidden { display: none !important; }
 
-        /* ─── 프리뷰 패널 (Sticky 스크롤 애니메이션) ─── */
+        /* ─── 프리뷰 패널 (Sticky 유지) ─── */
         .preview-col {
             display: flex;
             flex-direction: column;
@@ -406,7 +413,7 @@
             box-shadow: 0 16px 56px rgba(0,0,0,0.22);
         }
 
-        /* 이미지 레이어 (CSS Transition 제거하여 삐끗거림 방지) */
+        /* 이미지 레이어 (단단히 고정, Scroll JS 의존 제거) */
         #cImg {
             position: absolute;
             inset: 0;
@@ -420,7 +427,7 @@
             will-change: transform;
         }
 
-        /* 하단에서 올라오는 그라데이션 오버레이 */
+        /* 하단 그라데이션 오버레이 */
         .c-grad {
             position: absolute;
             inset: 0;
@@ -526,7 +533,7 @@
             max-width: 440px;
         }
 
-        /* 우측 정보 패널 (우측 정렬 적용) */
+        /* 우측 정보 패널 */
         .c-info {
             position: absolute;
             right: 44px;
@@ -578,7 +585,7 @@
             line-height: 1.5;
         }
 
-        /* 상징 키워드 영역 (우측 정렬 적용) */
+        /* 상징 키워드 영역 */
         .c-kwtags {
             display: flex;
             flex-wrap: wrap;
@@ -761,7 +768,8 @@ const $ = id => document.getElementById(id);
 const card = $('card');
 const setV = (n, v) => card.style.setProperty(n, v);
 
-// ─── 통합된 이미지 변환 함수 (삐끗거림 방지) ───
+// ─── 통합된 이미지 변환 함수 (삐끗거림 원천 차단) ───
+// 스크롤 패럴랙스를 완전히 제거하여 탭 이동 시 좌표가 튀는 현상을 막았습니다.
 function updateImgTransform() {
     const cImg = $('cImg');
     if (!cImg || cImg.style.display === 'none') return;
@@ -770,23 +778,11 @@ function updateImgTransform() {
     const posX = parseInt($('sPosX').value);
     const posY = parseInt($('sPosY').value);
 
+    // 슬라이더 값에만 100% 의존하여 이동 (스크롤 개입 0)
     const shiftX = (posX - 50) * 8;
     const baseShiftY = (posY - 50) * 6;
 
-    const scaler = $('cardScaler');
-    const rect = scaler.getBoundingClientRect();
-    const vh = window.innerHeight;
-    
-    if (vh === 0) return;
-
-    const center = rect.top + rect.height / 2;
-    const norm = (center - vh / 2) / (vh / 2 + rect.height / 2);
-    
-    // 범위를 제한하여 과도한 점프 방지
-    const clampedNorm = Math.max(-1, Math.min(1, norm));
-    const parallaxShift = clampedNorm * 40;
-
-    cImg.style.transform = `translate(${shiftX}px, ${baseShiftY + parallaxShift}px) scale(${zoom})`;
+    cImg.style.transform = `translate(${shiftX}px, ${baseShiftY}px) scale(${zoom})`;
 }
 
 // ─── 모바일 카드 스케일 ───
@@ -802,14 +798,11 @@ function scaleCard() {
         card.style.transform = '';
         scaler.style.height = '';
     }
-    // 창 크기가 변경될 때도 이미지 트랜스폼 즉시 재계산
-    updateImgTransform();
 }
 
-// 이벤트 리스너 통합 연동
+// 스크롤 이벤트 리스너 제거, 리사이즈만 유지
 scaleCard();
 window.addEventListener('resize', scaleCard);
-window.addEventListener('scroll', updateImgTransform, { passive: true });
 
 // ─── 그라데이션 업데이트 ───
 function updateGrad() {
@@ -862,7 +855,7 @@ $('imgIn').addEventListener('change', function(e) {
     rd.readAsDataURL(f);
 });
 
-// 슬라이더 이동 시 통합 트랜스폼 함수 호출
+// 슬라이더 이동 시 위치 즉각 갱신
 $('sPosX').addEventListener('input', function() { $('vPosX').textContent = this.value + '%'; updateImgTransform(); });
 $('sPosY').addEventListener('input', function() { $('vPosY').textContent = this.value + '%'; updateImgTransform(); });
 $('sZoom').addEventListener('input', function() { $('vZoom').textContent = this.value + '%'; updateImgTransform(); });
@@ -1008,7 +1001,6 @@ function addKw(raw) {
 }
 
 $('kwIn').addEventListener('keydown', function(e) {
-    // IME 조합 중인 이벤트는 건너뜁니다.
     if (e.isComposing) return;
     
     if (e.key === 'Enter' || e.key === ',') {
@@ -1099,13 +1091,13 @@ $('saveBtn').addEventListener('click', function() {
                 const tw = ctx.measureText(bv).width;
                 const bw = tw + 32, bh = 28, bx = W-30-bw, by = 30;
                 
-                boxShadow(); // 배경 박스는 Box-shadow
+                boxShadow(); 
                 ctx.fillStyle = acc;
                 ctx.beginPath();
                 ctx.roundRect(bx, by, bw, bh, 99);
                 ctx.fill();
                 
-                txtShadow(); // 텍스트는 Text-shadow
+                txtShadow(); 
                 ctx.fillStyle = '#fff';
                 ctx.textBaseline = 'middle';
                 ctx.textAlign = 'left';
@@ -1146,7 +1138,7 @@ $('saveBtn').addEventListener('click', function() {
                 cy -= 13;
             }
 
-            txtShadow(); // 구분선도 Text-shadow와 동일한 강도 적용
+            txtShadow();
             ctx.fillStyle = acc;
             ctx.beginPath();
             ctx.roundRect(44, cy-3, 36, 3, 99);
@@ -1172,14 +1164,13 @@ $('saveBtn').addEventListener('click', function() {
             let ry = H - 48;
             const lfsz = 9, vfsz = 12;
 
-            // 1. 상징 키워드 영역 (렌더링 순서 완벽 교정: [태그 -> 심볼 텍스트])
+            // 1. 상징 키워드 영역
             if (kws.length > 0) {
                 const boxH = 18; 
                 const maxRowWidth = 220;
                 let rows = [[]];
                 let rowWidths = [0];
 
-                // 키워드 줄바꿈 계산
                 kws.forEach(kw => {
                     ctx.font = `700 9.5px "Nunito", sans-serif`;
                     ctx.letterSpacing = '0.8px';
@@ -1197,11 +1188,9 @@ $('saveBtn').addEventListener('click', function() {
                 });
                 ctx.letterSpacing = '0px';
 
-                // 아래에서부터 위로 그리기 위해 역순 정렬
                 const reversedRows = [...rows].reverse();
                 const reversedWidths = [...rowWidths].reverse();
 
-                // 1) 둥근 키워드 태그들을 먼저 아래에 쌓습니다.
                 reversedRows.forEach((row, rIdx) => {
                     const boxY = ry - boxH;
                     let lx = rx - reversedWidths[rIdx]; 
@@ -1224,10 +1213,9 @@ $('saveBtn').addEventListener('click', function() {
                         ctx.letterSpacing = '0px';
                         lx += tw2 + 5;
                     });
-                    ry -= boxH + 4; // 다음 윗줄을 그리기 위해 Y축 이동
+                    ry -= boxH + 4; 
                 });
 
-                // 2) 태그들을 다 그린 후, 그 위(최상단)에 'SYMBOL' 라벨을 올립니다.
                 ctx.font = `800 ${lfsz}px "Nunito", sans-serif`;
                 ctx.letterSpacing = '2px';
                 ctx.fillStyle = acc;
@@ -1238,7 +1226,7 @@ $('saveBtn').addEventListener('click', function() {
                 ctx.globalAlpha = 1;
                 ctx.letterSpacing = '0px';
                 
-                ry -= lfsz + 16; // 다음 동적 정보 블록을 위해 Y축 이동
+                ry -= lfsz + 16; 
             }
 
             // 2. 동적 정보 리스트 데이터 수집
